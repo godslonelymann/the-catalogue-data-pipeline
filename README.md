@@ -49,8 +49,8 @@ The database tests need an **empty, throwaway** database. They drop and recreate
 ## Cron on EC2 (IST)
 
 ```
-30 2 * * *  cd ~/the-catalogue-pipeline && .venv/bin/python -m pipeline.run >> logs/pipeline.log 2>&1
-30 3 * * *  ~/the-catalogue-pipeline/scripts/backup.sh >> ~/the-catalogue-pipeline/logs/backup.log 2>&1
+30 2 * * *  cd ~/the-catalogue-data-pipeline && .venv/bin/python -m pipeline.run >> logs/pipeline.log 2>&1
+30 3 * * *  ~/the-catalogue-data-pipeline/scripts/backup.sh >> ~/the-catalogue-data-pipeline/logs/backup.log 2>&1
 ```
 
 `scripts/backup.sh` writes `~/backups/brands-YYYY-MM-DD.dump` and keeps the last 7 days.

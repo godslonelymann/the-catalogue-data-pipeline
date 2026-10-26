@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Daily backup of the `brands` database. Keeps the last 7 days.
-# Cron (IST): 30 3 * * *  ~/the-catalogue-pipeline/scripts/backup.sh >> ~/the-catalogue-pipeline/logs/backup.log 2>&1
+# Cron (IST): 30 3 * * *  ~/the-catalogue-data-pipeline/scripts/backup.sh >> ~/the-catalogue-data-pipeline/logs/backup.log 2>&1
 #
 # Runs pg_dump as the `postgres` OS user, because only the admin can read both
 # schemas (`pipeline` cannot read app.*). On Ubuntu the `ubuntu` user can sudo without a password.
