@@ -19,6 +19,7 @@ class Settings:
     database_url: str
     telegram_bot_token: str | None
     telegram_chat_id: str | None
+    log_level: str = "INFO"   # DEBUG shows more detail for one run: LOG_LEVEL=DEBUG python -m pipeline.run
 
 
 def load_settings() -> Settings:
@@ -30,4 +31,5 @@ def load_settings() -> Settings:
         database_url=database_url,
         telegram_bot_token=os.environ.get("TELEGRAM_BOT_TOKEN") or None,
         telegram_chat_id=os.environ.get("TELEGRAM_CHAT_ID") or None,
+        log_level=(os.environ.get("LOG_LEVEL") or "INFO").upper(),
     )

@@ -56,6 +56,15 @@ The database tests need an **empty, throwaway** database. They drop and recreate
 `scripts/backup.sh` writes `~/backups/brands-YYYY-MM-DD.dump` and keeps the last 7 days.
 Restore: `pg_restore -d brands <file>`.
 
+## Logs
+
+- `logs/pipeline.log`: one line per page, one result line per brand (with its time), a summary,
+  and "run finished in N s". A brand skipped by the safety check is a `WARNING` line with both counts.
+- `logs/backup.log`: one line per backup.
+- `LOG_LEVEL=DEBUG python -m pipeline.run` adds the HTTP status and time of every page request.
+- Rotation: `deploy/the-catalogue-pipeline.logrotate` rotates both files weekly and keeps 8 weeks.
+  Install: `sudo cp deploy/the-catalogue-pipeline.logrotate /etc/logrotate.d/the-catalogue-pipeline`.
+
 ## Files
 
 | File | What it does |

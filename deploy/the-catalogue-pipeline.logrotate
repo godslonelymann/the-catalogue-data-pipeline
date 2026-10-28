@@ -1,0 +1,13 @@
+# Weekly rotation of the cron logs, keeps 8 weeks (compressed). Install on EC2:
+#   sudo cp deploy/the-catalogue-pipeline.logrotate /etc/logrotate.d/the-catalogue-pipeline
+#   sudo logrotate --debug /etc/logrotate.d/the-catalogue-pipeline   # dry run, changes nothing
+# Cron opens the file again on every run (>>), so a plain rotate is safe.
+/home/ubuntu/the-catalogue-data-pipeline/logs/*.log {
+    su ubuntu ubuntu
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+}

@@ -40,6 +40,7 @@ def fetch_page(client: httpx.Client, base_url: str, page: int) -> list[dict]:
         response = None
         try:
             response = client.get(url, params=params)
+            log.debug("%s page %d: HTTP %d in %.2f s", base_url, page, response.status_code, response.elapsed.total_seconds())
             if response.status_code not in RETRY_STATUSES:
                 response.raise_for_status()
                 products = response.json().get("products")

@@ -7,6 +7,7 @@ At the end a summary goes to Telegram.
 
 import logging
 import sys
+import time
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -89,16 +90,22 @@ def process_brand(conn: psycopg.Connection, brand: dict, products: list[dict], n
 
 
 def run_brand(conn: psycopg.Connection, client: httpx.Client, brand: dict, now: datetime) -> BrandResult:
+    started = time.monotonic()
     try:
         products = extract.fetch_all_products(client, brand["base_url"])
         result = process_brand(conn, brand, products, now)
         log.info(
-            "%s: ok, %d products, %d variants, %d raw changes, %d missing, %d deactivated",
+            "%s: ok, %d products, %d variants, %d raw changes, %d missing, %d deactivated (%.1f s)",
             result.name, result.products, result.variants, result.raw_new, result.missing, result.deactivated,
+            time.monotonic() - started,
         )
         return result
+    except SafetyCheckError as e:
+        # Expected protection, not a bug: no stack trace, just the counts.
+        log.warning("%s: skipped by safety check: %s (%.1f s)", brand["name"], e, time.monotonic() - started)
+        return BrandResult(name=brand["name"], ok=False, error=f"safety check: {e}")
     except Exception as e:  # one brand must never stop the others
-        log.exception("%s: failed", brand["name"])
+        log.exception("%s: failed after %.1f s", brand["name"], time.monotonic() - started)
         return BrandResult(name=brand["name"], ok=False, error=f"{type(e).__name__}: {e}")
 
 
@@ -137,24 +144,28 @@ def send_telegram(settings: config.Settings, text: str) -> None:
 
 
 def main() -> int:
+    settings = config.load_settings()
     logging.basicConfig(
-        level=logging.INFO,
+        level=settings.log_level,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         stream=sys.stdout,
     )
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    settings = config.load_settings()
     now = datetime.now(timezone.utc)
+    started = time.monotonic()
     log.info("run started")
 
     with psycopg.connect(settings.database_url, autocommit=True) as conn, extract.make_client() as client:
         brands = load.get_active_brands(conn)
+        log.info("%d active brands", len(brands))
         results = [run_brand(conn, client, brand, now) for brand in brands]
 
     text = summary_text(results)
     log.info("summary:\n%s", text)
     send_telegram(settings, text)
-    return 0 if all(r.ok for r in results) else 1
+    failed = [r.name for r in results if not r.ok]
+    log.info("run finished in %.1f s, %d failed%s", time.monotonic() - started, len(failed), f": {failed}" if failed else "")
+    return 0 if not failed else 1
 
 
 if __name__ == "__main__":

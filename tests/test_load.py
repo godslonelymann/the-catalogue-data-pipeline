@@ -149,6 +149,18 @@ def test_safety_check_changes_nothing(conn):
 
 
 @db
+def test_safety_check_is_a_skip_not_a_crash(conn, monkeypatch, caplog):
+    run.process_brand(conn, BRAND, [make_product(i) for i in range(1, 11)], T0)
+    monkeypatch.setattr(run.extract, "fetch_all_products", lambda client, url: [make_product(1)])
+
+    result = run.run_brand(conn, None, BRAND, T0 + timedelta(days=1))
+
+    assert not result.ok and result.error.startswith("safety check:")
+    skip = [r for r in caplog.records if "skipped by safety check" in r.getMessage()]
+    assert len(skip) == 1 and skip[0].levelname == "WARNING" and skip[0].exc_info is None
+
+
+@db
 def test_missing_product_deactivated_after_two_runs(conn):
     run.process_brand(conn, BRAND, [make_product(i) for i in range(1, 11)], T0)
     nine = [make_product(i) for i in range(1, 10)]
