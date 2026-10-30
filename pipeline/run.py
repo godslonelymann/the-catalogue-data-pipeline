@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 import httpx
 import psycopg
 
-from pipeline import config, extract, load, rules
+from pipeline import changes, config, extract, load, rules
 
 log = logging.getLogger("pipeline")
 
@@ -61,6 +61,7 @@ def process_brand(conn: psycopg.Connection, brand: dict, products: list[dict], n
     products = dedupe_products(products)
     with conn.transaction():
         check_product_count(brand["name"], len(products), load.active_product_count(conn, brand["id"]))
+        before = changes.snapshot(conn, brand["id"])
 
         raw_new = load.insert_raw(conn, brand["id"], products, now)
         cleaned = [rules.clean_product(p) for p in products]
@@ -75,6 +76,7 @@ def process_brand(conn: psycopg.Connection, brand: dict, products: list[dict], n
         missing, deactivated = load.mark_missing_products(
             conn, brand["id"], [p["shopify_product_id"] for p in cleaned], config.MISSED_RUNS_LIMIT
         )
+        changes.insert(conn, changes.diff(before, changes.snapshot(conn, brand["id"]), now))
 
     if unknown_sizes:
         log.info("%s: unknown sizes (add aliases?): %s", brand["name"], dict(unknown_sizes.most_common(20)))

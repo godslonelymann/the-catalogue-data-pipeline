@@ -37,6 +37,25 @@ clean → upsert → mark missing products. Each brand is one transaction, so on
 brand never stops the others. A summary goes to Telegram at the end.
 The exit code is 1 if any brand failed.
 
+## Product update history
+
+Each successful brand transaction now also records new products, variant price changes,
+restocks, sold-out sizes, removals, and relistings in `catalog.product_changes`.
+Description/image edits remain raw changes and do not become shopping badges.
+Prices compare the same variant's observed selling prices, not `compare_at_price`.
+
+For an existing database, apply the updated `sql/catalog_schema.sql` as the database
+admin **before** deploying the new pipeline or backend. This adds one table and three
+indexes; existing product and variant rows are preserved. Then run:
+
+```bash
+python -m pipeline.backfill_changes
+```
+
+This recovers history from the retained raw snapshots, is safe to repeat, and sends no
+Telegram messages. Historical product removals/relistings cannot be recovered reliably
+from raw snapshots; these are recorded on future successful pipeline runs.
+
 ## Tests
 
 ```bash

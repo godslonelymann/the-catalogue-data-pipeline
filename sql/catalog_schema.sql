@@ -98,6 +98,26 @@ CREATE TABLE IF NOT EXISTS catalog.variants (
 
 CREATE INDEX IF NOT EXISTS variants_size_idx ON catalog.variants (size_norm);
 
+-- Shopper-facing changes, captured in the same transaction as the catalogue update.
+CREATE TABLE IF NOT EXISTS catalog.product_changes (
+    id              BIGSERIAL PRIMARY KEY,
+    product_id      BIGINT NOT NULL REFERENCES catalog.products (id),
+    variant_id      BIGINT REFERENCES catalog.variants (id),
+    event_type      TEXT NOT NULL CHECK (event_type IN
+                        ('new', 'price_drop', 'price_increase', 'restock', 'sold_out', 'removed', 'relisted')),
+    variant_label   TEXT,
+    old_price       NUMERIC(10,2),
+    new_price       NUMERIC(10,2),
+    observed_at     TIMESTAMPTZ NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS product_changes_dedupe_idx
+    ON catalog.product_changes (product_id, coalesce(variant_id, 0), event_type, observed_at);
+CREATE INDEX IF NOT EXISTS product_changes_history_idx
+    ON catalog.product_changes (product_id, observed_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS product_changes_recent_idx
+    ON catalog.product_changes (observed_at DESC);
+
 -- Access: pipeline reads and writes catalog (no DELETE: rows are never deleted).
 -- app_user (backend) can only read catalog.
 GRANT USAGE ON SCHEMA catalog TO pipeline, app_user;
