@@ -1,0 +1,25 @@
+[Unit]
+Description=Catalogue Airflow %i
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=catalogue-airflow
+Group=catalogue-airflow
+WorkingDirectory=/srv/catalogue
+EnvironmentFile=/etc/catalogue/airflow.env
+ExecStart=/srv/catalogue/airflow-venv/bin/airflow %i
+Restart=on-failure
+RestartSec=10
+KillMode=mixed
+TimeoutStopSec=120
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/catalogue/airflow
+
+[Install]
+WantedBy=multi-user.target

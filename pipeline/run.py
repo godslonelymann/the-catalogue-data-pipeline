@@ -56,15 +56,21 @@ def check_product_count(name: str, fetched: int, current_active: int) -> None:
         )
 
 
-def process_brand(conn: psycopg.Connection, brand: dict, products: list[dict], now: datetime) -> BrandResult:
+def process_brand(
+    conn: psycopg.Connection, brand: dict, products: list[dict], now: datetime,
+    *, cleaned_products: list[dict] | None = None,
+) -> BrandResult:
     """Load one brand's fetched products. All or nothing: one transaction."""
     products = dedupe_products(products)
     with conn.transaction():
+        conn.execute("SELECT id FROM catalog.brands WHERE id = %s FOR UPDATE", (brand["id"],))
         check_product_count(brand["name"], len(products), load.active_product_count(conn, brand["id"]))
         before = changes.snapshot(conn, brand["id"])
 
         raw_new = load.insert_raw(conn, brand["id"], products, now)
-        cleaned = [rules.clean_product(p) for p in products]
+        cleaned = cleaned_products if cleaned_products is not None else [rules.clean_product(p) for p in products]
+        if [p["shopify_product_id"] for p in cleaned] != [int(p["id"]) for p in products]:
+            raise ValueError("cleaned products do not match the validated product IDs")
 
         unknown_sizes: Counter[str] = Counter()
         for product in cleaned:
