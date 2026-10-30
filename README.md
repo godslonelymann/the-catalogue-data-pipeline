@@ -65,23 +65,7 @@ TEST_DATABASE_URL=postgresql://postgres:...@localhost:5432/catalogue_test pytest
 
 The database tests need an **empty, throwaway** database. They drop and recreate `catalog`.
 
-## Daily Airflow workflow
-
-The Airflow workflow runs at **02:30 Asia/Kolkata**, with separate fetch, validate,
-clean, and save tasks per active brand. It stages payloads in PostgreSQL, retries
-without repeating completed saves, scopes backend alerts to committed brands, and
-reports partial failures. No frontend changes are required.
-
-Apply `sql/airflow_pipeline_schema.sql` and the backend's
-`sql/alert_delivery_schema.sql` before enabling it. Follow [airflow/README.md](airflow/README.md)
-for its separate environment/metadata database, private systemd services, test
-rehearsal, and cron switchover. The legacy CLI remains available for maintenance;
-do not run it concurrently with the DAG.
-
-## Legacy cron on EC2 (IST)
-
-Remove the pipeline and backend notifier cron entries only after Airflow verification.
-Keep the backup entry below.
+## Cron on EC2 (IST)
 
 ```
 30 2 * * *  cd ~/the-catalogue-data-pipeline && .venv/bin/python -m pipeline.run >> logs/pipeline.log 2>&1
@@ -107,8 +91,5 @@ Restore: `pg_restore -d brands <file>`.
 | `pipeline/extract.py` | Fetch `/products.json` pages: `limit=250`, 1 s between requests, retry on 429/430/5xx |
 | `pipeline/rules.py` | Pure cleaning rules: size, category, sale price, gift card |
 | `pipeline/load.py` | Raw insert with hash dedupe, upserts, missing products |
-| `pipeline/run.py` | Legacy CLI and reusable brand transaction/summary helpers |
-| `pipeline/tasks.py` | Retry-safe workflow tasks and reporting |
-| `pipeline/staging.py` | Run manifest and payload checkpoints |
-| `airflow/` | Daily DAG, isolated environment, systemd deployment |
+| `pipeline/run.py` | Entry point, per-brand isolation, Telegram summary |
 | `sql/` | Schema and brand seed (source of truth) |
