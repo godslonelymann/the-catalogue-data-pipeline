@@ -1,0 +1,21 @@
+[Unit]
+Description=The Catalogue Airflow %i
+Wants=network-online.target
+After=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/airflow
+EnvironmentFile=/home/ubuntu/airflow/catalogue.env
+# Instances: api-server, scheduler, dag-processor. LocalExecutor needs no worker.
+ExecStart=/home/ubuntu/airflow-venv/bin/airflow %i
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=120
+KillMode=mixed
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

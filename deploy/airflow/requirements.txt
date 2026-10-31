@@ -1,0 +1,4 @@
+# Install with Apache's constraints matching this version and the venv's Python.
+# Keep separate from the scraper and API requirements.
+apache-airflow[postgres,fab]==3.3.2
+apache-airflow-providers-standard==1.19.0

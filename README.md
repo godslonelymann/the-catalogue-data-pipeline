@@ -65,7 +65,23 @@ TEST_DATABASE_URL=postgresql://postgres:...@localhost:5432/catalogue_test pytest
 
 The database tests need an **empty, throwaway** database. They drop and recreate `catalog`.
 
-## Cron on EC2 (IST)
+## Airflow on EC2 (IST)
+
+The Airflow DAGs in `dags/catalogue.py` run the existing CLI commands:
+
+- `catalogue_daily`: daily at 02:30 IST, refresh products → send backend restock
+  alerts only if the refresh succeeds.
+- `catalogue_backup`: daily at 03:30 IST, independently back up the database.
+
+Follow [the Airflow deploy guide](deploy/airflow/README.md) to install the separate
+environment, metadata database, dashboard login, and systemd services. DAGs start
+paused. Remove the old Catalogue cron entries before enabling them. No application
+schema changes are needed. Task retries and historical catchup are disabled because
+the current commands are not safe to repeat automatically.
+
+## Legacy cron on EC2 (IST)
+
+Use these only until Airflow cutover; do not enable both schedulers:
 
 ```
 30 2 * * *  cd ~/the-catalogue-data-pipeline && .venv/bin/python -m pipeline.run >> logs/pipeline.log 2>&1
@@ -76,6 +92,10 @@ The database tests need an **empty, throwaway** database. They drop and recreate
 Restore: `pg_restore -d brands <file>`.
 
 ## Logs
+
+With Airflow, read task output in the dashboard or `~/airflow/logs`, and service
+output with `journalctl -u catalogue-airflow@scheduler -f`. The locations below
+apply to legacy cron/manual redirection.
 
 - `logs/pipeline.log`: one line per page, one result line per brand (with its time), a summary,
   and "run finished in N s". A brand skipped by the safety check is a `WARNING` line with both counts.
