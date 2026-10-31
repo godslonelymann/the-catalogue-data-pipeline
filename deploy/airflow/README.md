@@ -111,6 +111,8 @@ dashboard password. User creation is needed once, not on every deployment.
 The configuration uses Postgres with `LocalExecutor`, a FAB password login, one
 task slot, one API worker, and one DAG parser for the existing 4 GB instance.
 Watch memory after cutover. Neither Redis nor a separate worker is required.
+The scheduler explicitly uses `fork`: Python 3.14 changed Linux's default to
+`forkserver`, which caused LocalExecutor worker startup failures on this EC2 host.
 
 ## 4. Start services with the DAGs still paused
 
