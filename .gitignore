@@ -6,3 +6,8 @@ __pycache__/
 logs/*
 !logs/.gitkeep
 *.dump
+airflow-venv/
+catalogue.env
+airflow.cfg
+airflow.db*
+simple_auth_manager_passwords.json*
